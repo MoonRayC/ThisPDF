@@ -1,0 +1,65 @@
+{
+  "Technology": [
+    "AI",
+    "Cybersecurity",
+    "IoT",
+    "Software Development",
+    "Data Science",
+    "Cloud Computing",
+    "Blockchain"
+  ],
+  "Education": [
+    "History",
+    "Math",
+    "Science",
+    "Literature",
+    "Philosophy",
+    "Psychology",
+    "Languages"
+  ],
+  "Business": [
+    "Marketing",
+    "Finance",
+    "Management",
+    "Entrepreneurship",
+    "Strategy",
+    "Operations",
+    "HR"
+  ],
+  "Health": [
+    "Medicine",
+    "Nutrition",
+    "Fitness",
+    "Mental Health",
+    "Public Health",
+    "Research",
+    "Pharmacy"
+  ],
+  "Science": [
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Astronomy",
+    "Geology",
+    "Environmental",
+    "Research"
+  ],
+  "Arts": [
+    "Visual Arts",
+    "Music",
+    "Theater",
+    "Literature",
+    "Film",
+    "Design",
+    "Photography"
+  ],
+  "Legal": [
+    "Contract Law",
+    "Criminal Law",
+    "Civil Law",
+    "Corporate Law",
+    "International Law",
+    "Intellectual Property",
+    "Regulations"
+  ]
+}

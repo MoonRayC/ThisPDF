@@ -1,0 +1,48 @@
+{
+  "name": "user-profile-micoservice",
+  "version": "1.0.0",
+  "description": "User Profile Management Microservice",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "lint": "eslint src/**/*.js",
+    "test": "jest",
+    "seed": "node scripts/seed.js",
+    "check-db": "node scripts/check-database.js"
+  },
+  "keywords": [
+    "nodejs",
+    "microservice",
+    "mongodb",
+    "friends",
+    "social",
+    "api"
+  ],
+  "author": "Raymond D. Chavez Jr.",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^7.1.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "eslint": "^9.29.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.4"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
