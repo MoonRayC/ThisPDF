@@ -9,6 +9,9 @@ from app.services.virus_scanner import scan_uploaded_file
 from app.services.metadata_extractor import extract_pdf_info
 from app.services.storage import upload_file_to_storage, storage_service
 from app.config.config import Config
+from app.services.preview_generator import generate_and_upload_preview
+from app.client.minio_client import minio_client
+from minio.error import S3Error
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +61,21 @@ class UploadController:
                 logger.error(f"Failed to upload file: {upload_result.get('error')}")
                 return False, f"Failed to upload file: {upload_result.get('error')}", None
             
+            preview_url = None
+
+            try:
+                logger.info(f"Generating preview for file_id {upload_result['file_id']}")
+                preview_result = generate_and_upload_preview(
+                    file_buffer=file_buffer,
+                    file_id=upload_result['file_id']
+                )
+                preview_url = preview_result.get("preview_url")
+            except Exception as e:
+                logger.warning(f"Failed to generate preview image: {e}")
+            
             # Step 4: Prepare response data
             response_data = self._build_response_data(
-                upload_result, pdf_metadata, validated_data, user_id
+                upload_result, pdf_metadata, validated_data, user_id, preview_url
             )
             
             logger.info(f"File uploaded successfully: {upload_result['file_id']} by user {user_id}")
@@ -71,7 +86,7 @@ class UploadController:
             return False, f"Internal server error: {str(e)}", None
     
     def _build_response_data(self, upload_result: Dict, pdf_metadata: Dict, 
-                           validated_data: Dict, user_id: str) -> Dict:
+                           validated_data: Dict, user_id: str, preview_url: Optional[str]) -> Dict:
         """Build response data structure"""
         response_metadata = {
             'title': pdf_metadata['title'],
@@ -91,6 +106,7 @@ class UploadController:
             'message': 'Upload successful',
             'pdf_id': upload_result['file_id'],
             'file_url': upload_result.get('file_url'),
+            'image_url': preview_url,
             'metadata': response_metadata
         }
     
@@ -106,12 +122,6 @@ class UploadController:
             (success, error_message)
         """
         try:
-            # TODO: In a real implementation, you would:
-            # 1. Check if the file belongs to the user
-            # 2. Delete from database
-            # 3. Delete from storage
-            
-            # For now, just attempt to delete from storage
             deleted = False
             for visibility in ['public', 'private']:
                 if storage_service.delete_file(file_id, visibility):
@@ -128,48 +138,60 @@ class UploadController:
             logger.error(f"Error deleting file {file_id}: {e}")
             return False, f"Failed to delete file: {str(e)}"
     
-    def get_file_url(self, file_id: str, visibility: str = 'private', 
-                    expires_in: int = 3600) -> Tuple[bool, Optional[str], Optional[Dict]]:
-        """
-        Get file URL (direct or presigned)
+    def get_file_url(self, file_id: str, visibility: str = 'private', expires_in: int = 3600):
+        try:
+            url = None
+            if visibility == 'public':
+                protocol = 'https' if Config.MINIO_SECURE else 'http'
+                url = f"{protocol}://{Config.PUBLIC_MINIO_HOST}/{Config.MINIO_BUCKET}/public/{file_id}.pdf"
+                try:
+                    storage_service.client.stat_object(Config.MINIO_BUCKET, f"public/{file_id}.pdf")
+                except S3Error:
+                    return False, 'File not found', None
+
+                return True, None, {
+                    'file_url': url,
+                    'expires_in': None,
+                    'visibility': 'public'
+                }
+
+            else:
+                url = storage_service.get_presigned_url(file_id, visibility, expires_in)
+                if not url:
+                    return False, 'Could not generate secure URL', None
+
+                return True, None, {
+                    'file_url': url,
+                    'expires_in': expires_in,
+                    'visibility': 'private'
+                }
+
+        except Exception as e:
+            logger.error(f"Error getting URL for {file_id}: {e}")
+            return False, str(e), None
         
+
+    def get_preview_url(self, file_id: str) -> Tuple[bool, Optional[str], Optional[str]]:
+        """
+        Generate public URL for preview image if it exists.
+
         Args:
-            file_id: File identifier
-            visibility: File visibility ('public' or 'private')
-            expires_in: Expiration time for presigned URLs (seconds)
-            
+            file_id: The ID of the PDF file
+
         Returns:
-            (success, error_message, url_data)
+            Tuple: (success, error_message, preview_url)
         """
         try:
-            if visibility == 'public':
-                # Public files have direct URLs
-                protocol = 'https' if Config.MINIO_SECURE else 'http'
-                endpoint = Config.MINIO_ENDPOINT
-                
-                if endpoint.startswith('http://') or endpoint.startswith('https://'):
-                    file_url = f"{endpoint}/{Config.MINIO_BUCKET}/public/{file_id}.pdf"
-                else:
-                    file_url = f"{protocol}://{endpoint}/{Config.MINIO_BUCKET}/public/{file_id}.pdf"
-                
-                url_data = {
-                    'file_url': file_url,
-                    'expires_in': None
-                }
-            else:
-                # Generate presigned URL for private files
-                file_url = storage_service.get_presigned_url(file_id, visibility, expires_in)
-                
-                if not file_url:
-                    return False, "Could not generate presigned URL", None
-                
-                url_data = {
-                    'file_url': file_url,
-                    'expires_in': expires_in
-                }
-            
-            return True, None, url_data
-            
+            preview_key = f"{Config.PREVIEW_FOLDER}/{file_id}.jpg"
+            protocol = 'https' if Config.MINIO_SECURE else 'http'
+            url = f"{protocol}://{Config.PUBLIC_MINIO_HOST}/{Config.MINIO_BUCKET}/{preview_key}"
+
+            # ✅ Use the same client that uploaded the preview
+            minio_client.stat_object(Config.MINIO_BUCKET, preview_key)
+
+            return True, None, url
+        except S3Error:
+            return False, "Preview image not found", None
         except Exception as e:
-            logger.error(f"Error getting URL for file {file_id}: {e}")
-            return False, f"Failed to get file URL: {str(e)}", None
+            logger.error(f"Error getting preview URL for {file_id}: {e}")
+            return False, "Internal server error", None

@@ -3,6 +3,13 @@ const router = express.Router();
 const authController = require('../controller/auth.controller');
 
 const {
+  authLimiter,
+  looseLimiter,
+  verificationLimiter,
+  refreshLimiter
+} = require('../middleware/rateLimiter.middleware');
+
+const {
   validateRegister,
   validateLogin,
   validateEmailVerification,
@@ -43,7 +50,7 @@ const { authenticateToken } = require('../middleware/auth.middleware');
  *       201:
  *         description: User registered successfully
  */
-router.post('/register', validateRegister, authController.register);
+router.post('/register', authLimiter, validateRegister, authController.register);
 
 /**
  * @swagger
@@ -72,7 +79,7 @@ router.post('/register', validateRegister, authController.register);
  *       200:
  *         description: Email verified successfully
  */
-router.post('/verify-email', validateEmailVerification, authController.verifyEmail);
+router.post('/verify-email', authLimiter, validateEmailVerification, authController.verifyEmail);
 
 /**
  * @swagger
@@ -96,7 +103,7 @@ router.post('/verify-email', validateEmailVerification, authController.verifyEma
  *       200:
  *         description: Verification code resent successfully
  */
-router.post('/resend-code', validateResendCode, authController.resendVerificationCode);
+router.post('/resend-code', verificationLimiter, validateResendCode, authController.resendVerificationCode);
 
 /**
  * @swagger
@@ -130,7 +137,7 @@ router.post('/resend-code', validateResendCode, authController.resendVerificatio
  *       200:
  *         description: Login successful
  */
-router.post('/login', validateLogin, authController.login);
+router.post('/login', authLimiter, validateLogin, authController.login);
 
 /**
  * @swagger
@@ -154,7 +161,7 @@ router.post('/login', validateLogin, authController.login);
  *       200:
  *         description: Access token refreshed successfully
  */
-router.post('/refresh', validateRefreshToken, authController.refreshToken);
+router.post('/refresh', refreshLimiter, validateRefreshToken, authController.refreshToken);
 
 /**
  * @swagger
@@ -178,7 +185,7 @@ router.post('/refresh', validateRefreshToken, authController.refreshToken);
  *       200:
  *         description: Password reset request sent
  */
-router.post('/request-password-reset', authController.requestPasswordReset);
+router.post('/request-password-reset', verificationLimiter, authController.requestPasswordReset);
 
 /**
  * @swagger
@@ -210,7 +217,7 @@ router.post('/request-password-reset', authController.requestPasswordReset);
  *       200:
  *         description: Password reset successfully
  */
-router.post('/reset-password', validatePasswordReset, authController.resetPassword);
+router.post('/reset-password', authLimiter, validatePasswordReset, authController.resetPassword);
 
 /**
  * @swagger
@@ -234,7 +241,7 @@ router.post('/reset-password', validatePasswordReset, authController.resetPasswo
  *       200:
  *         description: Logged out successfully
  */
-router.post('/logout', authController.logout);
+router.post('/logout', authLimiter, authController.logout);
 
 /**
  * @swagger
@@ -258,7 +265,7 @@ router.post('/logout', authController.logout);
  *       200:
  *         description: Social login successful
  */
-router.post('/social/google', authController.googleLogin);
+router.post('/social/google', authLimiter, authController.googleLogin);
 
 /**
  * @swagger
@@ -272,7 +279,7 @@ router.post('/social/google', authController.googleLogin);
  *       200:
  *         description: A list of active devices
  */
-router.get('/devices', authenticateToken, authController.listDevices);
+router.get('/devices', looseLimiter, authenticateToken, authController.listDevices);
 
 /**
  * @swagger
@@ -286,6 +293,6 @@ router.get('/devices', authenticateToken, authController.listDevices);
  *       200:
  *         description: Current user info
  */
-router.get('/user', authenticateToken, authController.getCurrentUser);
+router.get('/user', looseLimiter, authenticateToken, authController.getCurrentUser);
 
 module.exports = router;

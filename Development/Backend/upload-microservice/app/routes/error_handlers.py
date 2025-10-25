@@ -128,6 +128,14 @@ class UploadErrorHandler:
         return UploadErrorHandler.create_error_response(
             f'{resource} not found', 404, 'NOT_FOUND'
         )
+    
+    @staticmethod
+    def handle_preview_error(message="Preview not available"):
+        """Handle preview not found errors"""
+        return UploadErrorHandler.create_error_response(
+            message, 404, 'PREVIEW_NOT_FOUND'
+        )
+    
 
 
 # Custom exception classes for better error handling

@@ -28,7 +28,7 @@ def get_user_from_token():
         token = auth_header[7:]  # Remove "Bearer " prefix
         
         # Call auth microservice to validate token
-        auth_url = f"{Config.AUTH_SERVICE_URL}/api/user"
+        auth_url = f"{Config.AUTH_SERVICE_URL}/api/auth/user"
         headers = {'Authorization': f'Bearer {token}'}
         
         response = requests.get(auth_url, headers=headers, timeout=10)

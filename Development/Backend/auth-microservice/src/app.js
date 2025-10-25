@@ -1,45 +1,92 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth.routes');
-const { errorHandler } = require('./middleware/errorHandler.middleware');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler.middleware');
 
 const app = express();
 
-app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"]
+    }
+  }
 }));
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    const allowedOrigins = process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+      : ['http://localhost:3000'];
+
+    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined'));
 
-app.get('/health', (req, res) => {
+// Health check endpoint
+app.get('/health', (_req, res) => {
   res.status(200).json({
-    status: 'OK',
+    status: 'healthy',
+    service: 'user-profile-microservice',
     timestamp: new Date().toISOString(),
-    service: 'auth-microservice'
+    version: process.env.npm_package_version || '1.0.0'
   });
 });
 
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'Auth Microservice',
+  })
+);
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 
-app.use('*', (req, res) => {
+app.get('/', (req, res) => {
+  res.send(`
+    <pre><code>
+  ==================================================
+     ________  ______  _________    __   __   
+    |__  ___ \\/ ____ \\/ _____/ /_  /_/__/ /_______
+      / /__/ / /   / / /    / __ \\__ /_  __/ ____/
+     / ___  / /___/ / /____/ /_/ / /  / / (___  )
+    /_/  /_/_______/______/_____/_/  /_/ /_____/
+                    O N L I N E
+  ==================================================
+    </code></pre>
+  `);
+});
+app.use('*', (_req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+app.use(notFoundHandler);
 
 app.use(errorHandler);
 

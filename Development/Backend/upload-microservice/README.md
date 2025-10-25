@@ -29,10 +29,15 @@ upload_microservice/
 ├── venv
 ├── app/
 │   ├── __init__.py                # Flask app factory
-│   ├── config.py                  # Configuration loader
+│   ├── config/                    # Configuration loader
+│   │   ├── swagger_config.py
+│   │   └── config.py
 │   ├── data/
 │   │   └── categories.json        # Static category-subcategory map
 │   ├── routes/
+│   │   ├── controller.py
+│   │   ├── error_handlers.py
+│   │   ├── validators.py
 │   │   └── upload_routes.py       # PDF upload and metadata endpoints
 │   ├── services/
 │   │   ├── virus_scanner.py       # Scan PDFs using ClamAV

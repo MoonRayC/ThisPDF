@@ -9,8 +9,7 @@ const {
   checkBlocked,
   preventSelfAction,
   validateFriendRequest,
-  rateLimiter
-} = require('../middleware/friend.middleware');
+} = require('../middleware/auth.middleware');
 const {
   validateFriendRequest: validateFriendRequestBody,
   validateFriendAction,
@@ -19,10 +18,12 @@ const {
   validateNotSelfAction,
   validateFriendListAccess
 } = require('../middleware/validation.middleware');
-const { asyncHandler } = require('../middleware/errorHandler.middleware');
 
-const friendActionRateLimit = rateLimiter(50, 15 * 60 * 1000);
-const generalRateLimit = rateLimiter(100, 15 * 60 * 1000);
+const { asyncHandler } = require('../middleware/errorHandler.middleware');
+const { createRateLimiter } = require('../middleware/rateLimiter.middleware');
+
+const friendActionRateLimit = createRateLimiter(50, 15 * 60 * 1000);
+const generalRateLimit = createRateLimiter(100, 15 * 60 * 1000);
 
 /**
  * @swagger

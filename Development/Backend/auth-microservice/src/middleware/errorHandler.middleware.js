@@ -53,6 +53,13 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
+const notFoundHandler = (req, res) => {
+  res.status(404).json({
+    error: 'Route not found',
+    message: `Cannot ${req.method} ${req.path}`
+  });
+};
+
 // Async error wrapper
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -60,5 +67,6 @@ const asyncHandler = (fn) => (req, res, next) => {
 
 module.exports = {
   errorHandler,
+  notFoundHandler,
   asyncHandler
 };

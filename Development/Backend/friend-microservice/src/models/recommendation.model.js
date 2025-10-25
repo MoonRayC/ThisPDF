@@ -1,16 +1,18 @@
 const mongoose = require('mongoose');
 
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 // Friend Recommendation Schema
 const friendRecommendationSchema = new mongoose.Schema({
   user_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   recommended_user_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   score: {
     type: mongoose.Schema.Types.Decimal128,

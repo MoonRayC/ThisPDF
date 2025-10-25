@@ -5,7 +5,7 @@ class Database {
     this.connection = null;
   }
 
-  async connect() {
+  async connectDB() {
     try {
       const options = {
         maxPoolSize: 10,

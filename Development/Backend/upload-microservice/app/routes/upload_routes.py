@@ -54,34 +54,35 @@ def get_categories():
 def upload_pdf(user_id):
     """
     Upload PDF
-
     ---
+    tags:
+      - Upload
     security:
-      - BearerAuth: []
-    consumes:
-      - multipart/form-data
-    parameters:
-      - name: file
-        in: formData
-        type: file
-        required: true
-      - name: category
-        in: formData
-        type: string
-        required: true
-      - name: subcategory
-        in: formData
-        type: string
-        required: true
-      - name: tags
-        in: formData
-        type: string
-        required: false
-      - name: visibility
-        in: formData
-        type: string
-        enum: [public, private]
-        required: true
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - file
+              - category
+              - subcategory
+              - visibility
+            properties:
+              file:
+                type: string
+                format: binary
+              category:
+                type: string
+              subcategory:
+                type: string
+              tags:
+                type: string
+              visibility:
+                type: string
+                enum: [public, private]
     responses:
       201:
         description: Upload successful
@@ -144,13 +145,13 @@ def delete_pdf(user_id, file_id):
     ---
     tags:
       - Upload
+    security:
+      - bearerAuth: []
     parameters:
       - name: file_id
         in: path
         type: string
         required: true
-    security:
-      - Bearer: []
     responses:
       200:
         description: File deleted successfully
@@ -187,82 +188,106 @@ def get_file_url(user_id, file_id):
         in: path
         type: string
         required: true
+        description: The ID of the PDF file
       - name: visibility
         in: query
         type: string
         enum: [public, private]
         default: private
+        required: false
+        description: Choose between public or private URL
       - name: expires
         in: query
         type: integer
         default: 3600
-        maximum: 86400
+        required: false
+        description: Expiration time in seconds for the URL (max 86400). Only applies to private links.
     security:
-      - Bearer: []
+      - bearerAuth: []
     responses:
       200:
-        description: File URL generated
+        description: File URL successfully generated
+        examples:
+          application/json: 
+            file_url: "http://localhost:9000/pdf-upload-service/public/your-file-id.pdf"
+            expires_in: null
+            visibility: "public"
       400:
-        description: Invalid visibility or expires
+        description: Invalid visibility or expires value
       404:
-        description: URL generation failed
+        description: File not found or URL generation failed
       500:
         description: Internal server error
     """
     try:
         visibility = request.args.get('visibility', 'private')
-        expires_in = int(request.args.get('expires', 3600))
-        
-        # Validate parameters
+        expires_param = request.args.get('expires', '3600')
+
+        # Validate expires param
+        try:
+            expires_in = int(expires_param)
+        except (ValueError, TypeError):
+            return error_handler.handle_validation_error(
+                'Invalid expires parameter. Must be a number.'
+            )
+
+        # Validate visibility
         if visibility not in ['public', 'private']:
             return error_handler.handle_validation_error(
                 'Visibility must be "public" or "private"'
             )
-        
-        if expires_in <= 0 or expires_in > 86400:  # Max 24 hours
+
+        # Enforce max expiry window
+        if expires_in <= 0 or expires_in > 86400:
             return error_handler.handle_validation_error(
                 'Expires must be between 1 and 86400 seconds'
             )
-        
+
         success, error_message, url_data = controller.get_file_url(
             file_id, visibility, expires_in
         )
-        
+
         if success:
             return jsonify(url_data), 200
         else:
             return error_handler.handle_not_found_error("File URL")
-            
-    except ValueError:
-        return error_handler.handle_validation_error(
-            'Invalid expires parameter. Must be a number.'
-        )
+
     except Exception as e:
         logger.error(f"Error in get_file_url endpoint for file {file_id}: {e}")
         return error_handler.handle_processing_error(
             "Failed to get file URL", str(e)
         )
 
-
-@upload_bp.route('/upload/health', methods=['GET'])
-def health_check():
+@upload_bp.route('/upload/preview/image/<file_id>', methods=['GET'])
+def get_preview_image(file_id):
     """
-    Health Check Endpoint
+    Get First Page Preview Image of a PDF
     ---
     tags:
-      - System
+      - Preview
+    parameters:
+      - name: file_id
+        in: path
+        type: string
+        required: true
+        description: The file ID of the uploaded PDF
     responses:
       200:
-        description: Service is healthy
-        schema:
-          type: object
-          example:
-            status: healthy
-            service: upload-service
-            version: 1.0.0
+        description: Preview image URL generated
+        examples:
+          application/json:
+            preview_url: "http://localhost:9000/pdf-upload-service/preview/<file_id>.jpg"
+      404:
+        description: Preview not found
     """
-    return jsonify({
-        'status': 'healthy',
-        'service': 'upload-service',
-        'version': '1.0.0'
-    }), 200
+    try:
+        success, error_message, url = controller.get_preview_url(file_id)
+
+        if success:
+            return jsonify({'preview_url': url}), 200
+        else:
+            return error_handler.handle_preview_error(error_message)
+
+    except Exception as e:
+        logger.error(f"Exception in preview route for {file_id}: {e}")
+        return error_handler.handle_generic_error("Error retrieving preview")

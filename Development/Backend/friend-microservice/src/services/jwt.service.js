@@ -38,7 +38,7 @@ class JWTService {
         headers: {
           'Authorization': `Bearer ${token}`
         },
-        timeout: 5000 // 5 second timeout
+        timeout: 5000 
       });
 
       return response.data;

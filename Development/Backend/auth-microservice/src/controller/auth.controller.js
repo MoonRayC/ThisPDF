@@ -15,11 +15,14 @@ const MAX_ATTEMPTS = 5;
 exports.register = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     const existingUser = await UserModel.getUserByEmail(email);
-    if (existingUser) return res.status(422).json({ error: 'Email already registered' });
+    if (existingUser) {
+      return res.status(422).json({ error: 'Email already registered' });
+    }
 
     const passwordHash = await bcrypt.hash(password, 12);
+
     const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
     const userId = await withTransaction(async () => {
@@ -27,18 +30,31 @@ exports.register = async (req, res) => {
       await UserModel.createEmailVerificationToken(
         userId,
         verificationToken,
-        new Date(Date.now() + 24 * 60 * 60 * 1000)
+        new Date(Date.now() + 24 * 60 * 60 * 1000) 
       );
       return userId;
     });
 
     await sendVerificationEmail(email, verificationToken);
+
     const user = await UserModel.getUserById(userId);
+
+    const accessToken = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
 
     res.status(201).json({
       message: 'User registered successfully. Please check your email to verify your account.',
-      user
+      user: {
+        id: user.id,
+        email: user.email,
+        is_email_verified: user.is_email_verified
+      },
+      access_token: accessToken,
     });
+
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Internal server error' });

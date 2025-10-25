@@ -1,0 +1,13 @@
+<clickhouse>
+  <users>
+    <default>
+      <password></password>
+      <networks>
+        <ip>::/0</ip> <!-- IPv6 -->
+        <ip>0.0.0.0/0</ip> <!-- IPv4 -->
+      </networks>
+      <profile>default</profile>
+      <quota>default</quota>
+    </default>
+  </users>
+</clickhouse>

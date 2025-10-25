@@ -1,0 +1,262 @@
+services:
+  #Supporting Services
+  
+   # PostgreSQL
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Raynix219
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # MongoDB
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+
+  # Redis
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  # MinIO
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # WebUI
+    environment:
+      MINIO_ROOT_USER: xinyar219
+      MINIO_ROOT_PASSWORD: raynix219
+    volumes:
+      - minio-data:/data
+
+  # ClamAV
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: clamav
+    ports:
+      - "3310:3310"
+    volumes:
+      - ./clamav-config:/etc/clamav
+    command: ["clamd", "--foreground=true", "--config-file=/etc/clamav/clamd.conf"]
+    healthcheck:
+      test: ["CMD", "clamdscan", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Meilisearch
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_MASTER_KEY=raynix219
+    volumes:
+      - meili_data:/meili_data
+
+  # pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: xinyar219@thispdf.com
+      PGADMIN_DEFAULT_PASSWORD: raynix219
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+
+  # Kafka (message broker)
+  kafka:
+    image: bitnami/kafka:3.4.0
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
+  # Zookeeper (Kafka dependency)
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  # ClickHouse (columnar analytics DB)
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9009:9009"
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+
+  # Frontend (React)
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - auth
+  #     - profile
+  #     - friend
+  #     - upload
+
+  # Auth Microservice (Node.js + PostgreSQL)
+  auth:
+    build: ./backend/auth-microservice
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env.auth
+    depends_on:
+      - postgres
+      - redis
+      - pgadmin
+
+  # User Profile Microservice (Node.js + PostgreSQL)
+  profile:
+    build: ./backend/user-profile-microservice
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env.profile
+    depends_on:
+      - postgres
+      - redis
+      - auth
+      - pgadmin
+
+  # Friend Microservice (Node.js + MongoDB)
+  friend:
+    build: ./backend/friend-microservice
+    ports:
+      - "3011:3011"
+    env_file:
+      - .env.friend
+    depends_on:
+      - mongo
+      - redis
+      - auth
+
+  # Comment Microservice (Node.js + MongoDB)
+  comment:
+    build: ./backend/comment-microservice
+    ports:
+      - "3007:3007"
+    env_file:
+      - .env.comment
+    depends_on:
+      - mongo
+      - auth
+
+  # Favorite Microservice (Node.js + MongoDB)
+  favorite:
+    build: ./backend/favorite-microservice
+    ports:
+      - "3008:3008"
+    env_file:
+      - .env.favorite
+    depends_on:
+      - mongo
+      - auth
+
+  # Upload Microservice (Flask + ClamAV + MinIO)
+  upload:
+    build: ./backend/upload-microservice
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env.upload
+    volumes:
+      - ./uploads:/uploads
+      - clamav_socket:/tmp
+    depends_on:
+      - clamav
+      - minio
+      - auth
+  
+  # Metadata Microservice (Node.js + PostgreSQL)
+  metadata:
+    build: ./backend/metadata-microservice
+    ports:
+      - "3004:3004"
+    env_file:
+      - .env.metadata
+    depends_on:
+      - postgres
+      - auth
+      - search
+      - pgadmin
+
+  # Viewer Microservice (Node.js)
+  viewer:
+    build: ./backend/viewer-microservice
+    ports:
+      - "3005:3005"
+    env_file:
+      - .env.viewer
+    depends_on:
+      - auth
+      - metadata
+      - upload
+      - friend
+  
+  # Search Microservice (Node.js + MeiliSearch)
+  search:
+    build: ./backend/search-microservice
+    ports:
+      - "3006:3006"
+    env_file:
+      - .env.search
+    depends_on:
+      - meilisearch
+
+  # Analytics Microservice (Node.js + Kafka + ClickHouse)
+  analytics:
+    build: ./backend/analytics-microservice
+    ports:
+      - "3009:3009"
+    env_file:
+      - .env.analytics
+    depends_on:
+      - kafka
+      - clickhouse
+
+volumes:
+  pgdata:
+  mongodb-data:
+  minio-data:
+  pgadmin-data:
+  clamav_socket:
+  meili_data:
+  clickhouse_data:

@@ -1,17 +1,19 @@
 const mongoose = require('mongoose');
 const { FRIEND_REQUEST_STATUS, FRIENDSHIP_STATUS, ACTIVITY_TYPE } = require('../utils/constants.util');
 
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 // Friend Request Schema
 const friendRequestSchema = new mongoose.Schema({
   requester_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   recipient_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   status: {
     type: String,
@@ -40,12 +42,12 @@ const friendshipSchema = new mongoose.Schema({
   user1_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   user2_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   status: {
     type: String,
@@ -55,7 +57,7 @@ const friendshipSchema = new mongoose.Schema({
   action_user_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   created_at: {
     type: Date,
@@ -74,12 +76,12 @@ const blockedUserSchema = new mongoose.Schema({
   blocker_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   blocked_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   reason: {
     type: String,
@@ -99,12 +101,12 @@ const friendshipActivitySchema = new mongoose.Schema({
   user_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   friend_id: {
     type: String,
     required: true,
-    match: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    match: UUID_REGEX,
   },
   activity_type: {
     type: String,

@@ -1,0 +1,70 @@
+# Node / Express.js .gitignore
+
+# dependencies
+node_modules/
+Development/Backend/analytics-microservice/node_modules
+Development/Backend/auth-microservice/node_modules
+Development/Backend/comment-microservice/node_modules
+Development/Backend/favorite-microservice/node_modules
+Development/Backend/friend-microservice/node_modules
+Development/Backend/metadata-microservice/node_modules
+Development/Backend/search-microservice/node_modules
+Development/Backend/user-profile-microservice/node_modules
+Development/Backend/viewer-microservice/node_modules
+
+
+
+# environment variables
+.env
+.env.*.local
+Development/.env.analytics
+Development/.env.auth
+Development/.env.comment
+Development/.env.favorite
+Development/.env.friend
+Development/.env.metadata
+Development/.env.profile
+Development/.env.search
+Development/.env.upload
+Development/.env.viewer
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# build / output
+dist/
+build/
+out/
+
+# coverage
+coverage/
+.nyc_output/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# caches
+.npm
+.eslintcache
+
+# optional package manager artifacts
+.pnp.*
+.yarn/*
+.yarnrc.yml

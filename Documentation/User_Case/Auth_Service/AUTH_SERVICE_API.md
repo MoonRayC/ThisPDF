@@ -4,7 +4,7 @@
 
 ## TP-0001: User Registration
 
-**POST** `/api/register`
+**POST** `/api/auth/register`
 
 Registers a new user and sends a 6-digit email verification code.
 
@@ -41,13 +41,17 @@ Registers a new user and sends a 6-digit email verification code.
     { "field": "password", "message": "Password must contain..." }
   ]
 }
+
+{
+    "error": "Email already registered"
+}
 ```
 
 ---
 
 ## TP-0002: Email Verification
 
-**POST** `/api/verify-email`
+**POST** `/api/auth/verify-email`
 
 Verifies a user's email address with a 6-digit code.
 
@@ -80,7 +84,7 @@ Verifies a user's email address with a 6-digit code.
 
 ## TP-0003: Resend Verification Code
 
-**POST** `/api/resend-code`
+**POST** `/api/auth/resend-code`
 
 ### Request
 
@@ -117,7 +121,7 @@ Verifies a user's email address with a 6-digit code.
 
 ## TP-0004: Login
 
-**POST** `/api/login`
+**POST** `/api/auth/login`
 
 ### Request
 
@@ -157,7 +161,7 @@ Verifies a user's email address with a 6-digit code.
 
 ## TP-0005: Refresh Token
 
-**POST** `/api/refresh-token`
+**POST** `/api/auth/refresh-token`
 
 ### Request
 
@@ -187,7 +191,7 @@ Verifies a user's email address with a 6-digit code.
 
 ## TP-0006: Request Password Reset
 
-**POST** `/api/request-password-reset`
+**POST** `/api/auth/request-password-reset`
 
 Sends a 6-digit password reset code to the user's email.
 
@@ -219,7 +223,7 @@ Sends a 6-digit password reset code to the user's email.
 
 ## TP-0007: Reset Password
 
-**POST** `/api/reset-password`
+**POST** `/api/auth/reset-password`
 
 Sends a 6-digit password reset code to the user's email.
 
@@ -253,7 +257,7 @@ Sends a 6-digit password reset code to the user's email.
 
 ## TP-0008: Logout
 
-**POST** `/api/logout`
+**POST** `/api/auth/logout`
 
 ### Request
 
@@ -283,7 +287,7 @@ Sends a 6-digit password reset code to the user's email.
 
 ## TP-0009: Social Login (Google)
 
-**POST** `/api/social-login`
+**POST** `/api/auth/social-login`
 
 ### Request
 
@@ -320,7 +324,7 @@ Sends a 6-digit password reset code to the user's email.
 
 ## TP-0010: List Devices
 
-**GET** `/api/devices`
+**GET** `/api/auth/devices`
 
 Requires Authorization: Bearer <access_token> header
 
@@ -352,7 +356,7 @@ Requires Authorization: Bearer <access_token> header
 
 ## TP-0011: Sensitive User Data
 
-**GET** `/api/user`
+**GET** `/api/auth/user`
 
 Requires Authorization: Bearer <access_token> header
 
@@ -361,7 +365,8 @@ Requires Authorization: Bearer <access_token> header
 
 ```json
 {
-    "id": "user_uuid"
+    "id": "user_uuid",
+    "email": "user@email.com"
 }
 ```
 - ❌ `401 Unauthorized`

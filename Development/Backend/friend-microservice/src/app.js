@@ -1,23 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
+const morgan = require('morgan');
 const swaggerSpec = require('./config/swagger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler.middleware');
 
-// Import routes
 const friendRoutes = require('./routes/friend.routes');
 
-// Create Express app
 const app = express();
 
-// Trust proxy if behind reverse proxy (for rate limiting)
-app.set('trust proxy', 1);
-
-// Security middleware
 app.use(helmet({
-  crossOriginEmbedderPolicy: false, // Allow swagger UI to work
+  crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -61,24 +55,7 @@ app.use(express.urlencoded({
   extended: true, 
   limit: '10mb' 
 }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  skip: (req) => {
-    // Skip rate limiting for health checks
-    return req.path === '/health' || req.path === '/api-docs';
-  }
-});
-
-app.use(limiter);
+app.use(morgan('combined'));
 
 // Request logging middleware (development only)
 if (process.env.NODE_ENV === 'development') {
@@ -116,11 +93,13 @@ app.get('/health', (req, res) => {
 app.use('/api/friends', friendRoutes);
 
 // Swagger documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Friends Microservice API Documentation'
-}));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'Friend Microservice',
+  })
+);
 
 // API info endpoint
 app.get('/api', (req, res) => {
@@ -137,14 +116,19 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Root endpoint
 app.get('/', (req, res) => {
-  res.json({
-    message: 'Friends Microservice API',
-    version: process.env.npm_package_version || '1.0.0',
-    status: 'running',
-    documentation: '/api-docs'
-  });
+  res.send(`
+    <pre><code>
+  ==================================================
+     ________  ______  _________    __   __   
+    |__  ___ \\/ ____ \\/ _____/ /_  /_/__/ /_______
+      / /__/ / /   / / /    / __ \\__ /_  __/ ____/
+     / ___  / /___/ / /____/ /_/ / /  / / (___  )
+    /_/  /_/_______/______/_____/_/  /_/ /_____/
+                    O N L I N E
+  ==================================================
+    </code></pre>
+  `);
 });
 
 // 404 handler for undefined routes
